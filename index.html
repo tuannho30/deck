@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Antigravity Deck</title>
   <style>
     body { background:#09090b; color:#f4f4f5; font-family:system-ui,sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; padding:20px; }
@@ -17,13 +18,27 @@
   <div id="links"></div>
   <script>
     (async () => {
+      const GIST_ID = '66aef5297deb252de870eb5d8ecdbbf3';
       try {
-        const res = await fetch('https://api.github.com/gists/=' + Date.now(), { cache: 'no-store' });
-        const data = await res.json();
-        const info = JSON.parse(data.files['tunnel.json'].content);
-        if (info.url) {
+        let info = null;
+        try {
+          const res = await fetch('https://api.github.com/gists/' + GIST_ID, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            info = JSON.parse(data.files['tunnel.json'].content);
+          }
+        } catch {}
+        if (!info) {
+          const rawRes = await fetch('https://gist.githubusercontent.com/tuannho30/' + GIST_ID + '/raw/tunnel.json?t=' + Date.now(), { cache: 'no-store' });
+          info = await rawRes.json();
+        }
+        if (info && info.url) {
+          document.getElementById('links').innerHTML =
+            '<a href="' + info.url + '">Bấm vào đây nếu không tự chuyển (4G/5G)</a><br>' +
+            '<a href="' + (info.lan || 'http://192.168.1.11:9808') + '">Mở qua Wi-Fi LAN</a>';
           window.location.replace(info.url);
-          document.getElementById('links').innerHTML = '<a href="' + info.url + '">Bấm vào đây nếu không tự chuyển (4G/5G)</a><br><a href="' + info.lan + '">Mở qua Wi-Fi LAN (' + info.lan + ')</a>';
+        } else {
+          throw new Error('Dữ liệu trống');
         }
       } catch (e) {
         document.getElementById('msg').innerText = 'Không lấy được link tự động: ' + e.message;
